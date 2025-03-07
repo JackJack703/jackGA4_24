@@ -14,8 +14,10 @@
 </head>
 <body>
     <h1>關鍵詞篩選器</h1>
-    <textarea id="inputText"></textarea><br>
-    <button onclick="filterText()">篩選文本</button>
+    <form onsubmit="filterText(); return false;">
+        <textarea id="inputText"></textarea><br>
+        <input type="submit" value="篩選文本">
+    </form>
     <div class="container">
         <div class="box">
             <h2>篩選後的文本</h2>
@@ -26,7 +28,7 @@
             <pre id="wordFrequency"></pre>
         </div>
     </div>
-    
+
     <script>
         const stopwords = new Set(["是", "和", "與", "及", "在", "了", "的", "將", "於", "以", "並", "等", "後", "這", "那", "但",
     "也", "卻", "或", "若", "及其", "因為", "所以", "以及", "如果", "當", "則", "由於", "需要",
@@ -109,28 +111,24 @@
     "認真", "無人", "問津", "變得", "深刻", "體會", "環境", "充斥著", "所以下定", "決心",
     "品質", "感受到", "原本", "不高", "突飛猛進", "要知道", "超高"
 ]);
-        
+
         function filterText() {
             let text = document.getElementById("inputText").value;
             let lines = text.split("\n");
-            let processedLines = [];
+            let filteredLines = [];
+            let wordCount = {};
+
+            for (let line of lines) {
+                let cleanedLine = line.replace(/[^一-龥a-zA-Z0-9\s.]/g, ""); // 只保留中文字、英文字母、數字與空格
+                let words = cleanedLine.split(/\s+/).filter(word => word.length > 1 && !stopwords.has(word));
+                words.forEach(word => {
+                    wordCount[word] = (wordCount[word] || 0) + 1;
+                });
+                filteredLines.push(words.join(" "));
+            }
             
-            lines.forEach(line => {
-                let cleanLine = line.replace(/[^\w\s.]/g, "").replace(/\s\d{1,4}(?=$|\s)/g, "");
-                let words = cleanLine.split(" ").filter(word => word.length > 1 && !stopwords.has(word));
-                processedLines.push(words.join(" "));
-            });
-            
-            let filteredText = processedLines.join("\n");
-            document.getElementById("filteredText").textContent = filteredText;
-            
-            let wordCounts = {};
-            filteredText.split(/\s+/).forEach(word => {
-                if (word) wordCounts[word] = (wordCounts[word] || 0) + 1;
-            });
-            
-            let freqText = Object.entries(wordCounts).map(([word, count]) => `${word}: ${count}`).join("\n");
-            document.getElementById("wordFrequency").textContent = freqText;
+            document.getElementById("filteredText").innerText = filteredLines.join("\n");
+            document.getElementById("wordFrequency").innerText = Object.entries(wordCount).map(([word, count]) => `${word}: ${count}`).join("\n");
         }
     </script>
 </body>
