@@ -1,24 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
- <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-JCRLJY3CD3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-JCRLJY3CD3');
-</script>
-<title>My HomePage</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2487.4">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
 </head>
 <body>
- Hello Google Analytics
-<br/>
- <a href="https://www.google.com" target="_blank">>Google</a>
- <br/>
- <a href="https://instagram.com" target="_blank">>IG Link</a>
- <br/>
- <br/>
- <iframe width="280" height="162" src="https://www.youtube.com/embed/I4smgmyl8Uk?si=qygPntJKj0PnTA6G&enablejsapi=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="zh"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;關鍵詞篩選器&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: Arial, sans-serif; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.container { display: flex; gap: 10px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.box { width: 50%; padding: 10px; border: 1px solid #ccc; overflow-wrap: break-word; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>textarea { width: 100%; height: 200px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; word-wrap: break-word; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;h1&gt;關鍵詞篩選器&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;textarea id="inputText"&gt;&lt;/textarea&gt;&lt;br&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button onclick="filterText()"&gt;篩選文本&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="box"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h2&gt;篩選後的文本&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;pre id="filteredText"&gt;&lt;/pre&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="box"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h2&gt;篩選後詞頻統計&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;pre id="wordFrequency"&gt;&lt;/pre&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const stopwords = new Set(["是", "和", "與", "及", "在", "了", "的", "將", "於", "以", "並", "等", "後", "這", "那", "但", "也", "卻", "或", "若", "及其", "因為", "所以", "以及", "如果", "當", "則", "由於", "需要"]);</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function filterText() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let text = document.getElementById("inputText").value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let lines = text.split("\n");</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let processedLines = [];</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>lines.forEach(line =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let cleanLine = line.replace(/[^\w\s.]/g, "").replace(/\s\d{1,4}(?=$|\s)/g, "");</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let words = cleanLine.split(" ").filter(word =&gt; word.length &gt; 1 &amp;&amp; !stopwords.has(word));</p>
+<p class="p1"><span class="Apple-converted-space">                </span>processedLines.push(words.join(" "));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>let filteredText = processedLines.join("\n");</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById("filteredText").textContent = filteredText;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>let wordCounts = {};</p>
+<p class="p1"><span class="Apple-converted-space">            </span>filteredText.split(/\s+/).forEach(word =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (word) wordCounts[word] = (wordCounts[word] || 0) + 1;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>let freqText = Object.entries(wordCounts).map(([word, count]) =&gt; `${word}: ${count}`).join("\n");</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById("wordFrequency").textContent = freqText;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
 </body>
 </html>
