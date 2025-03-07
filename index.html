@@ -120,7 +120,7 @@
 
             for (let line of lines) {
                 let cleanedLine = line.replace(/[^一-龥a-zA-Z0-9\s.]/g, ""); // 只保留中文字、英文字母、數字與空格
-                cleanedLine = cleanedLine.replace(/\s\d{1,4}(?=\s|$)/g, ""); // 移除前面有空格，後面無接文字的 1-4 位數字
+                cleanedLine = cleanedLine.replace(/\s\d{1,10}(?=\s|$)/g, ""); // 移除前面有空格，後面無接文字的 1-10 位數字
                 let words = cleanedLine.split(/\s+/).filter(word => word.length > 1 && !stopwords.has(word));
                 words.forEach(word => {
                     wordCount[word] = (wordCount[word] || 0) + 1;
