@@ -5,19 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>關鍵詞篩選器</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        .container { display: flex; gap: 10px; }
-        .box { width: 50%; padding: 10px; border: 1px solid #ccc; overflow-wrap: break-word; }
-        textarea { width: 100%; height: 200px; }
-        pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; word-wrap: break-word; }
-    </style>
-</head>
-<body>
+        <body>
     <h1>關鍵詞篩選器</h1>
-<form id="filterForm" onsubmit="event.preventDefault(); filterText();">
-    <textarea id="inputText"></textarea><br>
-    <input type="submit" value="篩選文本">
-</form>
+    <form id="filterForm" onsubmit="event.preventDefault(); filterText();">
+        <textarea id="inputText"></textarea><br>
+        <input type="submit" value="篩選文本">
+    </form>
+    <div class="container">
+        <div class="box">
+            <h2>篩選後的文本</h2>
+            <pre id="filteredText"></pre>
+        </div>
+        <div class="box">
+            <h2>篩選後詞頻統計</h2>
+            <pre id="wordFrequency"></pre>
+        </div>
+    </div>
+
     <div class="container">
         <div class="box">
             <h2>篩選後的文本</h2>
