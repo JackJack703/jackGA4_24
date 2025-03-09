@@ -14,10 +14,10 @@
 </head>
 <body>
     <h1>關鍵詞篩選器</h1>
-    <form onsubmit="filterText(); return false;">
-        <textarea id="inputText"></textarea><br>
-        <input type="submit" value="篩選文本">
-    </form>
+<form id="filterForm" onsubmit="event.preventDefault(); filterText();">
+    <textarea id="inputText"></textarea><br>
+    <input type="submit" value="篩選文本">
+</form>
     <div class="container">
         <div class="box">
             <h2>篩選後的文本</h2>
