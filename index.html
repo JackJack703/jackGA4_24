@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>關鍵詞篩選器</title>
     <style>
-        /* 样式部分保持不变 */
         body { 
             font-family: Arial, sans-serif; 
             margin: 20px;
@@ -58,14 +57,21 @@
         h1, h2 {
             color: #333;
         }
+        #statusMessage {
+            color: #ff6600;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <h1>關鍵詞篩選器</h1>
     
+    <div id="statusMessage">正在加載停用詞...</div>
+    
     <div>
         <textarea id="inputText" placeholder="請在此輸入要篩選的文本..."></textarea>
-        <button id="filterButton" type="button">篩選文本</button>
+        <button id="filterButton" type="button" disabled>篩選文本</button>
     </div>
     
     <div class="container">
@@ -77,39 +83,96 @@
             <h2>篩選後詞頻統計</h2>
             <pre id="wordFrequency">詞頻統計將顯示在這裡...</pre>
         </div>
+        <div class="box">
+            <h2>添加停用詞</h2>
+            <textarea id="newStopwords" placeholder="每行輸入一個停用詞..."></textarea>
+            <button id="addStopwords">添加停用詞</button>
+        </div>
+        <div class="box">
+            <h2>當前停用詞列表</h2>
+            <pre id="currentStopwords">停用詞列表加載中...</pre>
+        </div>
     </div>
 
     <script>
         // 初始化停用词集合
         let stopwords = new Set();
         let stopwordsLoaded = false;
+        const defaultStopwords = ["是", "和", "與", "及", "在", "了", "的", "我", "你", "他", "她", "它", "們", 
+                                  "這", "那", "這個", "那個", "有", "沒有", "不", "也", "就", "都", "而", "而且", 
+                                  "因為", "所以", "如果", "但是", "可以", "會", "要", "能", "得", "著", "過", "如何", 
+                                  "一個", "一些", "什麼", "怎麼", "為什麼", "多少", "幾個", "很", "非常", "太", "更", "最"];
+
+        // 獲取DOM元素
+        const statusMessage = document.getElementById('statusMessage');
+        const filterButton = document.getElementById('filterButton');
+        const currentStopwordsEl = document.getElementById('currentStopwords');
+        
+        // 顯示或更新停用詞列表
+        function updateStopwordsList() {
+            const sortedStopwords = Array.from(stopwords).sort();
+            currentStopwordsEl.textContent = sortedStopwords.join("\n");
+        }
 
         // 加载 stopwords.json 文件
-        fetch('stopwords.json')
-            .then(response => response.json())
-            .then(data => {
-                stopwords = new Set(data.stopwords);
-                stopwordsLoaded = true;
-                console.log("停用词已加载，共", stopwords.size, "个");
-            })
-            .catch(error => {
-                console.error("加载停用词文件失败:", error);
-                // 设置一个小的默认停用词集作为备用
-                stopwords = new Set(["是", "和", "與", "及", "在", "了", "的"]);
-                stopwordsLoaded = true;
-            });
+        function loadStopwords() {
+            // 先使用默認停用詞
+            stopwords = new Set(defaultStopwords);
+            
+            // 嘗試不同的路徑加載停用詞文件
+            const paths = ['./stopwords.json', '/stopwords.json', '../stopwords.json', 'stopwords.json'];
+            
+            function tryNextPath(index) {
+                if (index >= paths.length) {
+                    // 如果所有路徑都嘗試過，使用默認停用詞
+                    stopwordsLoaded = true;
+                    statusMessage.textContent = "使用默認停用詞列表，加載外部文件失敗。您可以手動添加更多停用詞。";
+                    filterButton.disabled = false;
+                    updateStopwordsList();
+                    console.warn("無法加載停用詞文件，使用默認列表");
+                    return;
+                }
+                
+                fetch(paths[index])
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && Array.isArray(data.stopwords)) {
+                            // 合併默認停用詞和加載的停用詞
+                            data.stopwords.forEach(word => stopwords.add(word));
+                            stopwordsLoaded = true;
+                            statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
+                            filterButton.disabled = false;
+                            updateStopwordsList();
+                            console.log("停用詞已加載，共", stopwords.size, "個");
+                        } else {
+                            throw new Error("無效的停用詞格式");
+                        }
+                    })
+                    .catch(error => {
+                        console.warn(`路徑 ${paths[index]} 加載失敗:`, error);
+                        // 嘗試下一個路徑
+                        tryNextPath(index + 1);
+                    });
+            }
+            
+            // 開始嘗試第一個路徑
+            tryNextPath(0);
+        }
         
         // 篩選文本的主要函數
         function filterText() {
             try {
                 console.log("開始執行篩選函數");
                 
-                // 检查停用词是否已加载
+                // 檢查停用詞是否已加載
                 if (!stopwordsLoaded) {
-                    document.getElementById('filteredText').textContent = "正在加载停用词，请稍候...";
-                    document.getElementById('wordFrequency').textContent = "正在准备中...";
-                    // 半秒后重试
-                    setTimeout(filterText, 500);
+                    document.getElementById('filteredText').textContent = "正在加載停用詞，請稍候...";
+                    document.getElementById('wordFrequency').textContent = "正在準備中...";
                     return;
                 }
                 
@@ -172,46 +235,44 @@
                 document.getElementById('wordFrequency').textContent = "無法完成詞頻統計";
             }
         }
+        
+        // 添加新停用詞函數
+        function addNewStopwords() {
+            const newWordsText = document.getElementById('newStopwords').value;
+            if (!newWordsText.trim()) {
+                alert("請輸入要添加的停用詞");
+                return;
+            }
+            
+            const newWords = newWordsText
+                .split('\n')
+                .map(word => word.trim())
+                .filter(word => word && !stopwords.has(word));
+            
+            // 添加新詞到停用詞列表
+            newWords.forEach(word => stopwords.add(word));
+            
+            // 更新停用詞顯示
+            updateStopwordsList();
+            
+            // 清空輸入框並顯示確認訊息
+            document.getElementById('newStopwords').value = '';
+            alert(`成功添加 ${newWords.length} 個新停用詞，當前共有 ${stopwords.size} 個停用詞。`);
+        }
 
-        // 在頁面加載完成後綁定事件
+        // 在頁面加載完成後綁定事件並加載停用詞
         document.addEventListener('DOMContentLoaded', function() {
             console.log("頁面已加載，腳本開始運行");
             
-            // 獲取DOM元素並綁定事件
-            const filterButton = document.getElementById('filterButton');
-            if (filterButton) {
-                filterButton.addEventListener('click', function() {
-                    console.log("篩選按鈕被點擊");
-                    filterText();
-                });
-            } else {
-                console.error("無法找到篩選按鈕元素");
-            }
+            // 先加載停用詞
+            loadStopwords();
+            
+            // 綁定篩選按鈕事件
+            document.getElementById('filterButton').addEventListener('click', filterText);
+            
+            // 綁定添加停用詞按鈕事件
+            document.getElementById('addStopwords').addEventListener('click', addNewStopwords);
         });
-
-        // 同時也直接綁定按鈕事件（不依賴DOMContentLoaded事件）
-        window.onload = function() {
-            console.log("窗口已完全加載");
-            const filterButton = document.getElementById('filterButton');
-            if (filterButton) {
-                filterButton.addEventListener('click', function() {
-                    console.log("篩選按鈕被點擊（通過window.onload）");
-                    filterText();
-                });
-            }
-        };
-
-        // 立即嘗試綁定按鈕（用於某些環境下可能DOMContentLoaded已經觸發）
-        (function() {
-            const filterButton = document.getElementById('filterButton');
-            if (filterButton) {
-                console.log("立即綁定篩選按鈕");
-                filterButton.addEventListener('click', function() {
-                    console.log("篩選按鈕被點擊（通過立即執行）");
-                    filterText();
-                });
-            }
-        })();
     </script>
 </body>
 </html>
