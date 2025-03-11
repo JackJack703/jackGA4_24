@@ -241,7 +241,7 @@
                 const path = paths[index];
                 logDebug(`嘗試從路徑加載: ${path}`);
                 
-                fetch(path)
+                fetch('https://jackjack703.github.io/jackGA4_24winter/stopwords.json')
                     .then(response => {
                         if (!response.ok) {
                             logDebug(`路徑 ${path} 返回錯誤 ${response.status}: ${response.statusText}`);
