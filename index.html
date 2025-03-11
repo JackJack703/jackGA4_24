@@ -278,28 +278,31 @@ function manualFetchAndFix() {
     });
 }
         
-        // 初始化停用詞（包括嘗試從 URL 加載和使用默認值）
-        function initializeStopwords() {
-            statusMessage.textContent = "正在加載停用詞...";
-            filterButton.disabled = true;
+// 初始化停用詞（包括嘗試從 URL 加載和使用默認值）
+function initializeStopwords() {
+    statusMessage.textContent = "正在加載停用詞...";
+    filterButton.disabled = true;
+    
+    // 先添加默認停用詞
+    initializeDefaultStopwords();
+    
+    // 嘗試從 URL 加載
+    loadStopwordsFromURL()
+        .then(() => {
+            statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
+            filterButton.disabled = false;
+            jsonEditorContainer.style.display = 'none';
+            updateStopwordsList();
+        })
+        .catch(error => {
+            logDebug(`標準加載失敗，嘗試備用方法: ${error.message}`);
             
-            // 先添加默認停用詞
-            initializeDefaultStopwords();
-            
-            // 嘗試從 URL 加載
-            loadStopwordsFromURL()
-                .then(() => {
-                    statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
-                    filterButton.disabled = false;
-                    jsonEditorContainer.style.display = 'none';
-                    updateStopwordsList();
-                })
-                .catch(error => {
-                    logDebug(`加載停用詞失敗: ${error.message}`);
+            // 嘗試手動獲取和修復
+            manualFetchAndFix()
+                .catch(fixError => {
+                    logDebug(`所有加載方法都失敗: ${fixError.message}`);
                     statusMessage.textContent = "使用默認停用詞列表，無法加載外部文件。您可以手動添加更多停用詞。";
                     filterButton.disabled = false;
-                    jsonEditorContainer.style.display = 'block';
-                    updateStopwordsList();
                     
                     // 預加載 JSON 編輯器
                     const defaultJson = {
@@ -307,7 +310,10 @@ function manualFetchAndFix() {
                     };
                     jsonEditorEl.value = JSON.stringify(defaultJson, null, 2);
                 });
-        }
+            
+            updateStopwordsList();
+        });
+}
         
         // 篩選文本的主要函數
         function filterText() {
