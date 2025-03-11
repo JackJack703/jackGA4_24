@@ -168,42 +168,115 @@
             logDebug(`已初始化 ${defaultStopwords.length} 個默認停用詞`);
         }
         
-        // 從 URL 加載停用詞 JSON
-        function loadStopwordsFromURL() {
-            logDebug(`嘗試從 ${jsonURL} 加載停用詞`);
-            
-            return fetch(jsonURL, { 
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Cache-Control': 'no-cache'
-                },
-                cache: 'no-store'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    logDebug(`HTTP 錯誤: ${response.status} - ${response.statusText}`);
-                    throw new Error(`無法加載停用詞: HTTP ${response.status}`);
-                }
-                logDebug('成功獲取 JSON 響應');
-                return response.json();
-            })
-            .then(data => {
-                if (!data || !Array.isArray(data.stopwords)) {
-                    logDebug('JSON 格式無效，沒有找到 stopwords 數組');
-                    throw new Error('無效的停用詞 JSON 格式');
-                }
-                
-                logDebug(`從 JSON 中找到 ${data.stopwords.length} 個停用詞`);
-                data.stopwords.forEach(word => {
-                    if (word && typeof word === 'string') {
-                        stopwords.add(word.trim());
-                    }
-                });
-                
-                return true;
-            });
+     // 從 URL 加載停用詞 JSON (增強錯誤處理)
+function loadStopwordsFromURL() {
+    logDebug(`嘗試從 ${jsonURL} 加載停用詞`);
+    
+    return fetch(jsonURL, { 
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+        },
+        cache: 'no-store'
+    })
+    .then(response => {
+        if (!response.ok) {
+            logDebug(`HTTP 錯誤: ${response.status} - ${response.statusText}`);
+            throw new Error(`無法加載停用詞: HTTP ${response.status}`);
         }
+        logDebug('成功獲取 JSON 響應');
+        // 先獲取文本內容，以便我們可以嘗試修復格式問題
+        return response.text();
+    })
+    .then(text => {
+        // 嘗試解析原始 JSON
+        try {
+            return JSON.parse(text);
+        } catch (jsonError) {
+            logDebug(`JSON 解析錯誤: ${jsonError.message}`);
+            
+            // 嘗試修復常見 JSON 格式問題
+            try {
+                // 1. 嘗試修復缺少逗號的問題
+                let fixedText = text.replace(/]([\r\n\s]*)\[/g, '],\n[');
+                
+                // 2. 嘗試修復缺少雙引號的問題
+                fixedText = fixedText.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
+                
+                // 3. 嘗試移除尾部逗號
+                fixedText = fixedText.replace(/,(\s*[\]}])/g, '$1');
+                
+                // 嘗試解析修復後的 JSON
+                logDebug("嘗試解析修復後的 JSON");
+                return JSON.parse(fixedText);
+            } catch (fixError) {
+                logDebug(`修復 JSON 失敗: ${fixError.message}`);
+                
+                // 嘗試提取單詞列表的最後手段
+                logDebug("嘗試直接提取單詞列表");
+                const wordMatches = text.match(/"([^"]+)"/g);
+                if (wordMatches && wordMatches.length > 0) {
+                    const extractedWords = wordMatches.map(w => w.replace(/"/g, ''));
+                    logDebug(`直接提取了 ${extractedWords.length} 個單詞`);
+                    return { stopwords: extractedWords };
+                }
+                
+                throw new Error(`JSON 格式無效且無法修復: ${jsonError.message}`);
+            }
+        }
+    })
+    .then(data => {
+        if (!data || !Array.isArray(data.stopwords)) {
+            logDebug('JSON 格式無效，沒有找到 stopwords 數組');
+            throw new Error('無效的停用詞 JSON 格式');
+        }
+        
+        logDebug(`從 JSON 中找到 ${data.stopwords.length} 個停用詞`);
+        data.stopwords.forEach(word => {
+            if (word && typeof word === 'string') {
+                stopwords.add(word.trim());
+            }
+        });
+        
+        return true;
+    });
+}
+
+// 手動修復指定的 JSON URL
+function manualFetchAndFix() {
+    logDebug("嘗試手動獲取和修復 JSON");
+    
+    return fetch(jsonURL, { 
+        method: 'GET',
+        headers: {
+            'Accept': 'text/plain',
+            'Cache-Control': 'no-cache'
+        },
+        cache: 'no-store'
+    })
+    .then(response => response.text())
+    .then(text => {
+        // 將文本內容顯示在 JSON 編輯器中，讓用戶可以手動修復
+        jsonEditorEl.value = text;
+        jsonEditorContainer.style.display = 'block';
+        statusMessage.textContent = "JSON 格式無效，請檢查並修復 JSON 編輯器中的內容，然後點擊「從 JSON 加載」";
+        
+        // 在調試信息中顯示錯誤位置附近的內容
+        try {
+            const errorPosition = 8493; // 從錯誤消息中獲取的位置
+            const startPos = Math.max(0, errorPosition - 50);
+            const endPos = Math.min(text.length, errorPosition + 50);
+            const errorContext = text.substring(startPos, endPos);
+            logDebug(`錯誤位置附近的 JSON 內容: \n${errorContext}\n`);
+            logDebug(`提示：錯誤大約在此文本的第 ${errorPosition - startPos} 個字符處（紅色標記）：\n${errorContext.substring(0, errorPosition - startPos)}<<<此處可能有問題>>>${errorContext.substring(errorPosition - startPos)}`);
+        } catch (e) {
+            logDebug("無法顯示錯誤上下文");
+        }
+        
+        throw new Error("JSON 格式無效，已將內容加載到編輯器中，請手動修復");
+    });
+}
         
         // 初始化停用詞（包括嘗試從 URL 加載和使用默認值）
         function initializeStopwords() {
