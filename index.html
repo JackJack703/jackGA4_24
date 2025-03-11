@@ -233,21 +233,30 @@ fetch(url)
   });
 }
         
-        // 從 JSON 編輯器加載停用詞
-        document.getElementById('loadFromJson').addEventListener('click', function() {
-            const jsonText = document.getElementById('jsonEditor').value;
-            logDebug("嘗試從 JSON 編輯器加載停用詞");
-
-const data = {
-  networkRequests: performance.getEntriesByType('resource').map(entry => ({
-    name: entry.name,
-    initiatorType: entry.initiatorType,
-    entryType: entry.entryType,
-    duration: entry.duration,
-    responseStatus: entry.responseStatus,
-    transferSize: entry.transferSize,
-  })),
-};
+// 從 JSON 編輯器加載停用詞
+document.getElementById('loadFromJson').addEventListener('click', function() {
+    const jsonText = document.getElementById('jsonEditor').value;
+    logDebug("嘗試從 JSON 編輯器加載停用詞");
+    
+    try {
+        const jsonData = JSON.parse(jsonText);
+        
+        if (jsonData && Array.isArray(jsonData.stopwords)) {
+            // 清空現有停用詞並加載新的
+            stopwords = new Set(defaultStopwords); // 保留默認停用詞
+            jsonData.stopwords.forEach(word => stopwords.add(word));
+            
+            updateStopwordsList();
+            statusMessage.textContent = `從 JSON 加載了 ${jsonData.stopwords.length} 個停用詞，當前共 ${stopwords.size} 個`;
+            logDebug(`成功從 JSON 編輯器加載了 ${jsonData.stopwords.length} 個停用詞`);
+        } else {
+            throw new Error("JSON 中沒有有效的 stopwords 數組");
+        }
+    } catch (error) {
+        logDebug(`從 JSON 加載失敗: ${error.message}`);
+        alert("JSON 格式錯誤或不包含有效的停用詞列表");
+    }
+});
         
         // 匯出當前停用詞到 JSON
         document.getElementById('exportStopwords').addEventListener('click', function() {
