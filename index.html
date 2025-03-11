@@ -162,122 +162,54 @@
         });
         
         // 顯示或更新停用詞列表
-        function updateStopwordsList() {
-            const sortedStopwords = Array.from(stopwords).sort();
-            currentStopwordsEl.textContent = sortedStopwords.join("\n");
-        }
-        
-        // 從 GitHub 儲存庫路徑解析獲取正確的路徑
-        function getCorrectPath() {
-            // 檢測當前頁面路徑
-            const currentPath = window.location.pathname;
-            logDebug(`當前頁面路徑: ${currentPath}`);
-            
-            // 推斷儲存庫名稱
-            let repoName = '';
-            const pathParts = currentPath.split('/');
-            if (pathParts.length > 1 && currentPath.startsWith('/')) {
-                repoName = pathParts[1]; // GitHub Pages 通常以 /repo-name 開頭
+function tryNextPath(index) {
+    if (index >= paths.length) {
+        // 所有路徑嘗試失敗，顯示默認停用詞
+        stopwordsLoaded = true;
+        statusMessage.textContent = "使用默認停用詞列表，加載外部文件失敗。您可以手動添加更多停用詞。";
+        logDebug("所有路徑嘗試失敗，切換到手動模式");
+        jsonEditorContainer.style.display = 'block';
+        filterButton.disabled = false;
+        updateStopwordsList();
+        return;
+    }
+    
+    const path = paths[index];
+    logDebug(`嘗試從路徑加載: ${path}`);
+    
+    fetch(path)
+        .then(response => {
+            if (!response.ok) {
+                logDebug(`路徑 ${path} 返回錯誤 ${response.status}: ${response.statusText}`);
+                throw new Error(`HTTP error! Status: ${response.status}`);
             }
-            logDebug(`推斷儲存庫名稱: ${repoName}`);
-            
-            // 構建可能的路徑
-            const paths = [];
-            
-            // 最簡單的情況 - 同一目錄
-            paths.push('./stopwords.json');
-            
-            // GitHub Pages 特定路徑
-            if (repoName) {
-                paths.push(`/${repoName}/stopwords.json`);
-            }
-            
-            // 絕對路徑
-            paths.push('/stopwords.json');
-            
-            // 上一級目錄
-            paths.push('../stopwords.json');
-            
-            // 相對路徑
-            paths.push('stopwords.json');
-            
-            // 使用當前 URL 的基礎路徑
-            const basePath = window.location.href.replace(/\/[^\/]*$/, '/');
-            paths.push(`${basePath}stopwords.json`);
-            
-            logDebug(`將嘗試的路徑: ${paths.join(', ')}`);
-            return paths;
-        }
-
-        // 加載 stopwords.json 文件
-        function loadStopwords() {
-            // 先使用默認停用詞
-            stopwords = new Set(defaultStopwords);
-            logDebug("加載了默認停用詞作為後備");
-            
-            // 嘗試不同的路徑加載停用詞文件
-            const paths = getCorrectPath();
-            
-            // 記錄當前環境信息以幫助診斷
-            logDebug(`當前網址: ${window.location.href}`);
-            logDebug(`協議: ${window.location.protocol}`);
-            logDebug(`主機名: ${window.location.hostname}`);
-            
-            function tryNextPath(index) {
-                if (index >= paths.length) {
-                    // 如果所有路徑都嘗試過，且都失敗了
-                    stopwordsLoaded = true;
-                    statusMessage.textContent = "使用默認停用詞列表，加載外部文件失敗。您可以手動添加更多停用詞。";
-                    logDebug("所有路徑嘗試失敗，切換到手動模式");
-                    
-                    // 顯示 JSON 編輯器，讓用戶可以手動輸入 JSON
-                    jsonEditorContainer.style.display = 'block';
-                    
-                    filterButton.disabled = false;
-                    updateStopwordsList();
-                    return;
-                }
+            logDebug(`路徑 ${path} 返回成功，正在解析 JSON`);
+            return response.json();
+        })
+        .then(data => {
+            if (data && Array.isArray(data.stopwords)) {
+                logDebug(`成功從 ${path} 加載了 ${data.stopwords.length} 個停用詞`);
                 
-                const path = paths[index];
-                logDebug(`嘗試從路徑加載: ${path}`);
+                // 合併默認停用詞和加載的停用詞
+                data.stopwords.forEach(word => stopwords.add(word));
+                stopwordsLoaded = true;
+                statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
+                filterButton.disabled = false;
+                updateStopwordsList();
                 
-                fetch('https://jackjack703.github.io/jackGA4_24winter/stopwords.json')
-                    .then(response => {
-                        if (!response.ok) {
-                            logDebug(`路徑 ${path} 返回錯誤 ${response.status}: ${response.statusText}`);
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        logDebug(`路徑 ${path} 返回成功，正在解析 JSON`);
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data && Array.isArray(data.stopwords)) {
-                            logDebug(`成功從 ${path} 加載了 ${data.stopwords.length} 個停用詞`);
-                            
-                            // 合併默認停用詞和加載的停用詞
-                            data.stopwords.forEach(word => stopwords.add(word));
-                            stopwordsLoaded = true;
-                            statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
-                            filterButton.disabled = false;
-                            updateStopwordsList();
-                            
-                            // 成功後隱藏 JSON 編輯器
-                            jsonEditorContainer.style.display = 'none';
-                        } else {
-                            logDebug(`路徑 ${path} 返回的 JSON 格式不正確`);
-                            throw new Error("無效的停用詞格式");
-                        }
-                    })
-                    .catch(error => {
-                        logDebug(`路徑 ${path} 加載失敗: ${error.message}`);
-                        // 嘗試下一個路徑
-                        tryNextPath(index + 1);
-                    });
+                // 成功後隱藏 JSON 編輯器
+                jsonEditorContainer.style.display = 'none';
+            } else {
+                logDebug(`路徑 ${path} 返回的 JSON 格式不正確`);
+                throw new Error("無效的停用詞格式");
             }
-            
-            // 開始嘗試第一個路徑
-            tryNextPath(0);
-        }
+        })
+        .catch(error => {
+            logDebug(`路徑 ${path} 加載失敗: ${error.message}`);
+            // 嘗試下一個路徑（如果有多個）
+            tryNextPath(index + 1);
+        });
+}
         
         // 從 JSON 編輯器加載停用詞
         document.getElementById('loadFromJson').addEventListener('click', function() {
