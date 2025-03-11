@@ -116,25 +116,30 @@
     <div id="jsonEditorContainer" class="box">
         <h2>JSON 內容編輯</h2>
         <p>如果無法加載外部文件，您可以在這裡編輯 JSON 格式的停用詞列表：</p>
-        <textarea id="jsonEditor" style="height:300px;" placeholder='{"stopwords": ["是", "和", "與"]}' ></textarea>
+        <textarea id="jsonEditor" style="height:300px;" placeholder='{"stopwords": ["是", "和", "與"]}'></textarea>
         <button id="loadFromJson">從 JSON 加載</button>
     </div>
 
     <script>
-        // 初始化
+        // 全局變量
         let stopwords = new Set();
-        let stopwordsLoaded = false;
         const defaultStopwords = ["是", "和", "與", "及", "在", "了", "的", "我", "你"];
         const debugLogs = [];
+        const jsonURL = 'https://jackjack703.github.io/jackGA4_24winter/stopwords.json';
         
-        // 獲取DOM元素
+        // DOM 元素
         const statusMessage = document.getElementById('statusMessage');
         const filterButton = document.getElementById('filterButton');
         const currentStopwordsEl = document.getElementById('currentStopwords');
         const debugInfoEl = document.getElementById('debugInfo');
         const jsonEditorContainer = document.getElementById('jsonEditorContainer');
+        const inputTextEl = document.getElementById('inputText');
+        const filteredTextOutput = document.getElementById('filteredText');
+        const wordFrequencyOutput = document.getElementById('wordFrequency');
+        const newStopwordsEl = document.getElementById('newStopwords');
+        const jsonEditorEl = document.getElementById('jsonEditor');
         
-        // 記錄調試信息
+        // 調試日誌功能
         function logDebug(message) {
             const timestamp = new Date().toISOString().split('T')[1].substring(0, 8);
             const logMessage = `[${timestamp}] ${message}`;
@@ -150,149 +155,93 @@
             debugInfoEl.scrollTop = debugInfoEl.scrollHeight;
         }
         
-        // 顯示/隱藏調試信息
-        document.getElementById('toggleDebug').addEventListener('click', function() {
-            if (debugInfoEl.style.display === 'none') {
-                debugInfoEl.style.display = 'block';
-                this.textContent = '隱藏調試信息';
-            } else {
-                debugInfoEl.style.display = 'none';
-                this.textContent = '顯示調試信息';
-            }
-        });
-        
-        // 顯示或更新停用詞列表
-function loadStopwords() {
-    const url = 'https://jackjack703.github.io/jackGA4_24winter/stopwords.json';
-    logDebug("嘗試從 " + url + " 加載 JSON");
-    fetch(url)
-      .then(response => {
-          if (!response.ok) {
-              logDebug(`路徑 ${url} 返回錯誤 ${response.status}: ${response.statusText}`);
-              throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          logDebug(`路徑 ${url} 返回成功，正在解析 JSON`);
-          return response.json();
-      })
-      .then(data => {
-          if (data && Array.isArray(data.stopwords)) {
-              logDebug(`成功從 ${url} 加載了 ${data.stopwords.length} 個停用詞`);
-              // 合併默認停用詞和加載的停用詞
-              data.stopwords.forEach(word => stopwords.add(word));
-              stopwordsLoaded = true;
-              statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
-              filterButton.disabled = false;
-              updateStopwordsList();
-              // 成功後隱藏 JSON 編輯器
-              jsonEditorContainer.style.display = 'none';
-          } else {
-              logDebug(`路徑 ${url} 返回的 JSON 格式不正確`);
-              throw new Error("無效的停用詞格式");
-          }
-      })
-      .catch(error => {
-          logDebug(`路徑 ${url} 加載失敗: ${error.message}`);
-          stopwordsLoaded = true;
-          statusMessage.textContent = "使用默認停用詞列表，加載外部文件失敗。您可以手動添加更多停用詞。";
-          filterButton.disabled = false;
-          jsonEditorContainer.style.display = 'block';
-          updateStopwordsList();
-      });
-}
-   const url = 'https://jackjack703.github.io/jackGA4_24winter/stopwords.json';
-fetch(url)
-  .then(response => {
-      if (!response.ok) {
-          logDebug(`路徑 ${url} 返回錯誤 ${response.status}: ${response.statusText}`);
-          throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      logDebug(`路徑 ${url} 返回成功，正在解析 JSON`);
-      return response.json();
-  })
-  .then(data => {
-      if (data && Array.isArray(data.stopwords)) {
-          logDebug(`成功從 ${url} 加載了 ${data.stopwords.length} 個停用詞`);
-          
-          // 合併默認停用詞和加載的停用詞
-          data.stopwords.forEach(word => stopwords.add(word));
-          stopwordsLoaded = true;
-          statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
-          filterButton.disabled = false;
-          updateStopwordsList();
-          
-          // 成功後隱藏 JSON 編輯器
-          jsonEditorContainer.style.display = 'none';
-      } else {
-          logDebug(`路徑 ${url} 返回的 JSON 格式不正確`);
-          throw new Error("無效的停用詞格式");
-      }
-  })
-  .catch(error => {
-      logDebug(`路徑 ${url} 加載失敗: ${error.message}`);
-      // 如果需要可以在這裡做錯誤處理
-  });
-}
-        
-// 從 JSON 編輯器加載停用詞
-document.getElementById('loadFromJson').addEventListener('click', function() {
-    const jsonText = document.getElementById('jsonEditor').value;
-    logDebug("嘗試從 JSON 編輯器加載停用詞");
-    
-    try {
-        const jsonData = JSON.parse(jsonText);
-        
-        if (jsonData && Array.isArray(jsonData.stopwords)) {
-            // 清空現有停用詞並加載新的
-            stopwords = new Set(defaultStopwords); // 保留默認停用詞
-            jsonData.stopwords.forEach(word => stopwords.add(word));
-            
-            updateStopwordsList();
-            statusMessage.textContent = `從 JSON 加載了 ${jsonData.stopwords.length} 個停用詞，當前共 ${stopwords.size} 個`;
-            logDebug(`成功從 JSON 編輯器加載了 ${jsonData.stopwords.length} 個停用詞`);
-        } else {
-            throw new Error("JSON 中沒有有效的 stopwords 數組");
+        // 更新停用詞列表顯示
+        function updateStopwordsList() {
+            const sortedStopwords = Array.from(stopwords).sort();
+            currentStopwordsEl.textContent = sortedStopwords.join("\n");
+            logDebug(`更新了停用詞顯示，共 ${stopwords.size} 個`);
         }
-    } catch (error) {
-        logDebug(`從 JSON 加載失敗: ${error.message}`);
-        alert("JSON 格式錯誤或不包含有效的停用詞列表");
-    }
-});
         
-        // 匯出當前停用詞到 JSON
-        document.getElementById('exportStopwords').addEventListener('click', function() {
-            const jsonData = {
-                stopwords: Array.from(stopwords).sort()
-            };
+        // 初始化默認停用詞
+        function initializeDefaultStopwords() {
+            defaultStopwords.forEach(word => stopwords.add(word));
+            logDebug(`已初始化 ${defaultStopwords.length} 個默認停用詞`);
+        }
+        
+        // 從 URL 加載停用詞 JSON
+        function loadStopwordsFromURL() {
+            logDebug(`嘗試從 ${jsonURL} 加載停用詞`);
             
-            const jsonString = JSON.stringify(jsonData, null, 2);
+            return fetch(jsonURL, { 
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache'
+                },
+                cache: 'no-store'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    logDebug(`HTTP 錯誤: ${response.status} - ${response.statusText}`);
+                    throw new Error(`無法加載停用詞: HTTP ${response.status}`);
+                }
+                logDebug('成功獲取 JSON 響應');
+                return response.json();
+            })
+            .then(data => {
+                if (!data || !Array.isArray(data.stopwords)) {
+                    logDebug('JSON 格式無效，沒有找到 stopwords 數組');
+                    throw new Error('無效的停用詞 JSON 格式');
+                }
+                
+                logDebug(`從 JSON 中找到 ${data.stopwords.length} 個停用詞`);
+                data.stopwords.forEach(word => {
+                    if (word && typeof word === 'string') {
+                        stopwords.add(word.trim());
+                    }
+                });
+                
+                return true;
+            });
+        }
+        
+        // 初始化停用詞（包括嘗試從 URL 加載和使用默認值）
+        function initializeStopwords() {
+            statusMessage.textContent = "正在加載停用詞...";
+            filterButton.disabled = true;
             
-            // 更新 JSON 編輯器
-            const jsonEditor = document.getElementById('jsonEditor');
-            jsonEditor.value = jsonString;
-            jsonEditorContainer.style.display = 'block';
+            // 先添加默認停用詞
+            initializeDefaultStopwords();
             
-            // 創建臨時下載連結
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'stopwords.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            logDebug(`已匯出 ${stopwords.size} 個停用詞到 JSON`);
-        });
+            // 嘗試從 URL 加載
+            loadStopwordsFromURL()
+                .then(() => {
+                    statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
+                    filterButton.disabled = false;
+                    jsonEditorContainer.style.display = 'none';
+                    updateStopwordsList();
+                })
+                .catch(error => {
+                    logDebug(`加載停用詞失敗: ${error.message}`);
+                    statusMessage.textContent = "使用默認停用詞列表，無法加載外部文件。您可以手動添加更多停用詞。";
+                    filterButton.disabled = false;
+                    jsonEditorContainer.style.display = 'block';
+                    updateStopwordsList();
+                    
+                    // 預加載 JSON 編輯器
+                    const defaultJson = {
+                        stopwords: Array.from(stopwords)
+                    };
+                    jsonEditorEl.value = JSON.stringify(defaultJson, null, 2);
+                });
+        }
         
         // 篩選文本的主要函數
         function filterText() {
             try {
                 logDebug("開始執行篩選函數");
                 
-                let text = document.getElementById('inputText').value;
-                const filteredTextOutput = document.getElementById('filteredText');
-                const wordFrequencyOutput = document.getElementById('wordFrequency');
+                let text = inputTextEl.value;
                 
                 if (!text) {
                     filteredTextOutput.textContent = "請輸入要篩選的文本";
@@ -345,14 +294,14 @@ document.getElementById('loadFromJson').addEventListener('click', function() {
                 logDebug(`篩選完成，找到 ${Object.keys(wordCount).length} 個不同的詞`);
             } catch (error) {
                 logDebug(`篩選過程中發生錯誤: ${error.message}`);
-                document.getElementById('filteredText').textContent = "處理時發生錯誤: " + error.message;
-                document.getElementById('wordFrequency').textContent = "無法完成詞頻統計";
+                filteredTextOutput.textContent = "處理時發生錯誤: " + error.message;
+                wordFrequencyOutput.textContent = "無法完成詞頻統計";
             }
         }
         
-        // 添加新停用詞函數
+        // 添加新停用詞
         function addNewStopwords() {
-            const newWordsText = document.getElementById('newStopwords').value;
+            const newWordsText = newStopwordsEl.value;
             if (!newWordsText.trim()) {
                 alert("請輸入要添加的停用詞");
                 return;
@@ -375,23 +324,105 @@ document.getElementById('loadFromJson').addEventListener('click', function() {
             updateStopwordsList();
             
             // 清空輸入框並顯示確認訊息
-            document.getElementById('newStopwords').value = '';
+            newStopwordsEl.value = '';
             logDebug(`添加了 ${newWords.length} 個新停用詞`);
             alert(`成功添加 ${newWords.length} 個新停用詞，當前共有 ${stopwords.size} 個停用詞。`);
         }
-
-        // 在頁面加載完成後綁定事件並加載停用詞
-        document.addEventListener('DOMContentLoaded', function() {
-            logDebug("頁面已加載，腳本開始運行");
+        
+        // 從 JSON 編輯器加載停用詞
+        function loadFromJsonEditor() {
+            const jsonText = jsonEditorEl.value;
+            logDebug("嘗試從 JSON 編輯器加載停用詞");
             
-            // 先加載停用詞
-            loadStopwords();
+            try {
+                const jsonData = JSON.parse(jsonText);
+                
+                if (jsonData && Array.isArray(jsonData.stopwords)) {
+                    // 清空現有停用詞並重新添加默認停用詞
+                    stopwords = new Set();
+                    initializeDefaultStopwords();
+                    
+                    // 添加 JSON 中的停用詞
+                    let addedCount = 0;
+                    jsonData.stopwords.forEach(word => {
+                        if (word && typeof word === 'string' && !stopwords.has(word.trim())) {
+                            stopwords.add(word.trim());
+                            addedCount++;
+                        }
+                    });
+                    
+                    updateStopwordsList();
+                    statusMessage.textContent = `從 JSON 加載了 ${addedCount} 個新停用詞，當前共 ${stopwords.size} 個`;
+                    logDebug(`成功從 JSON 編輯器加載了 ${addedCount} 個新停用詞`);
+                    alert(`成功加載停用詞，當前共有 ${stopwords.size} 個停用詞`);
+                } else {
+                    throw new Error("JSON 中沒有有效的 stopwords 數組");
+                }
+            } catch (error) {
+                logDebug(`從 JSON 加載失敗: ${error.message}`);
+                alert(`JSON 格式錯誤: ${error.message}`);
+            }
+        }
+        
+        // 匯出停用詞到 JSON
+        function exportStopwordsToJson() {
+            const jsonData = {
+                stopwords: Array.from(stopwords).sort()
+            };
             
-            // 綁定篩選按鈕事件
-            document.getElementById('filterButton').addEventListener('click', filterText);
+            const jsonString = JSON.stringify(jsonData, null, 2);
             
-            // 綁定添加停用詞按鈕事件
+            // 更新 JSON 編輯器並顯示
+            jsonEditorEl.value = jsonString;
+            jsonEditorContainer.style.display = 'block';
+            
+            // 創建臨時下載連結
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'stopwords.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            logDebug(`已匯出 ${stopwords.size} 個停用詞到 JSON`);
+        }
+        
+        // 綁定事件處理程序
+        function setupEventHandlers() {
+            // 篩選按鈕點擊事件
+            filterButton.addEventListener('click', filterText);
+            
+            // 添加停用詞按鈕點擊事件
             document.getElementById('addStopwords').addEventListener('click', addNewStopwords);
+            
+            // 從 JSON 加載按鈕點擊事件
+            document.getElementById('loadFromJson').addEventListener('click', loadFromJsonEditor);
+            
+            // 匯出停用詞按鈕點擊事件
+            document.getElementById('exportStopwords').addEventListener('click', exportStopwordsToJson);
+            
+            // 顯示/隱藏調試信息按鈕點擊事件
+            document.getElementById('toggleDebug').addEventListener('click', function() {
+                if (debugInfoEl.style.display === 'none') {
+                    debugInfoEl.style.display = 'block';
+                    this.textContent = '隱藏調試信息';
+                } else {
+                    debugInfoEl.style.display = 'none';
+                    this.textContent = '顯示調試信息';
+                }
+            });
+            
+            logDebug("所有事件處理程序已設置");
+        }
+        
+        // 頁面加載完成後執行
+        document.addEventListener('DOMContentLoaded', function() {
+            logDebug("頁面已加載，開始初始化");
+            setupEventHandlers();
+            initializeStopwords();
         });
     </script>
 </body>
