@@ -289,7 +289,7 @@ function initializeStopwords() {
     // 嘗試從 URL 加載
     loadStopwordsFromURL()
         .then(() => {
-            statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.size} 個停用詞`;
+            statusMessage.textContent = `成功加載停用詞文件，共 ${stopwords.date} 個停用詞`;
             filterButton.disabled = false;
             jsonEditorContainer.style.display = 'none';
             updateStopwordsList();
