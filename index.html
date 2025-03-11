@@ -212,25 +212,17 @@ fetch(url)
         document.getElementById('loadFromJson').addEventListener('click', function() {
             const jsonText = document.getElementById('jsonEditor').value;
             logDebug("嘗試從 JSON 編輯器加載停用詞");
-            
-            try {
-                const data = JSON.parse(jsonText);
-                if (data && Array.isArray(data.stopwords)) {
-                    // 重置並重新加載停用詞
-                    stopwords = new Set(defaultStopwords);
-                    data.stopwords.forEach(word => stopwords.add(word));
-                    logDebug(`從 JSON 編輯器成功加載了 ${data.stopwords.length} 個停用詞`);
-                    
-                    statusMessage.textContent = `已從 JSON 編輯器加載停用詞，共 ${stopwords.size} 個`;
-                    updateStopwordsList();
-                } else {
-                    throw new Error("JSON 格式不正確，需要 {\"stopwords\": [\"詞1\", \"詞2\"]} 格式");
-                }
-            } catch (error) {
-                logDebug(`JSON 解析錯誤: ${error.message}`);
-                alert(`JSON 格式錯誤: ${error.message}`);
-            }
-        });
+
+const data = {
+  networkRequests: performance.getEntriesByType('resource').map(entry => ({
+    name: entry.name,
+    initiatorType: entry.initiatorType,
+    entryType: entry.entryType,
+    duration: entry.duration,
+    responseStatus: entry.responseStatus,
+    transferSize: entry.transferSize,
+  })),
+};
         
         // 匯出當前停用詞到 JSON
         document.getElementById('exportStopwords').addEventListener('click', function() {
