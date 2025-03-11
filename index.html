@@ -120,7 +120,7 @@
             stopwords = new Set(defaultStopwords);
             
             // 嘗試不同的路徑加載停用詞文件
-            const paths = ['./.stopwords.json', '/stopwords.json', '../stopwords.json', 'stopwords.json'];
+            const paths = ['jackGA4_24winter/.stopwords.json', '/stopwords.json', '../stopwords.json', 'stopwords.json'];
             
             function tryNextPath(index) {
                 if (index >= paths.length) {
