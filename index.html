@@ -114,13 +114,13 @@
             currentStopwordsEl.textContent = sortedStopwords.join("\n");
         }
 
-        // 加载 stopwords.json 文件
+        // 加载 .stopwords.json 文件
         function loadStopwords() {
             // 先使用默認停用詞
             stopwords = new Set(defaultStopwords);
             
             // 嘗試不同的路徑加載停用詞文件
-            const paths = ['./stopwords.json', '/stopwords.json', '../stopwords.json', 'stopwords.json'];
+            const paths = ['./.stopwords.json', '/stopwords.json', '../stopwords.json', 'stopwords.json'];
             
             function tryNextPath(index) {
                 if (index >= paths.length) {
