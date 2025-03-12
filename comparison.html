@@ -83,6 +83,10 @@
         }
         th {
             background-color: #f6f8fa;
+            cursor: pointer;
+        }
+        th:hover {
+            background-color: #e1e4e8;
         }
         tr:nth-child(even) {
             background-color: #f9f9f9;
@@ -113,20 +117,29 @@
         .tab-content.active {
             display: block;
         }
+        .summary {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #0366d6;
+        }
+        .total-column {
+            background-color: #f0f8ff;
+        }
     </style>
 </head>
 <body>
     <h1>關鍵詞比較與頻率分析工具</h1>
-    <p>在下方輸入兩份文字，系統會自動比較並找出重複的關鍵詞及其在兩部分的出現頻率。每個關鍵詞應該獨立一行，行尾數字將被忽略。</p>
+    <p>在下方輸入兩份文字，系統會自動比較並找出重複的關鍵詞及其原始頻率。每個關鍵詞的格式應為「關鍵詞 數字」（例如：「蘋果 56」）。</p>
     
     <div class="container">
         <div class="input-container">
             <h2>第一部分</h2>
-            <textarea id="part1" placeholder="請輸入第一部分文字，每行一個關鍵詞"></textarea>
+            <textarea id="part1" placeholder="請輸入第一部分文字，每行格式為「關鍵詞 數字」"></textarea>
         </div>
         <div class="input-container">
             <h2>第二部分</h2>
-            <textarea id="part2" placeholder="請輸入第二部分文字，每行一個關鍵詞"></textarea>
+            <textarea id="part2" placeholder="請輸入第二部分文字，每行格式為「關鍵詞 數字」"></textarea>
         </div>
     </div>
     
@@ -142,19 +155,22 @@
         
         <div id="simple-result" class="tab-content active">
             <h3>重複的關鍵詞</h3>
+            <div id="summary" class="summary"></div>
             <div id="result" class="result"></div>
             <button id="copy-simple" class="copy-button">複製結果</button>
         </div>
         
         <div id="detailed-result" class="tab-content">
-            <h3>重複關鍵詞與頻率分析</h3>
+            <h3>重複關鍵詞與原始頻率</h3>
+            <div id="table-summary" class="summary"></div>
             <div id="frequency-table-container">
                 <table id="frequency-table">
                     <thead>
                         <tr>
-                            <th>關鍵詞</th>
-                            <th>第一部分出現頻率</th>
-                            <th>第二部分出現頻率</th>
+                            <th onclick="sortTable(0)">關鍵詞</th>
+                            <th onclick="sortTable(1)">第一部分頻率</th>
+                            <th onclick="sortTable(2)">第二部分頻率</th>
+                            <th onclick="sortTable(3)" class="total-column">總頻率</th>
                         </tr>
                     </thead>
                     <tbody id="frequency-data"></tbody>
@@ -165,28 +181,31 @@
     </div>
 
     <script>
-        function removeTrailingNumbers(text) {
+        function extractKeywordsAndFrequencies(text) {
             // 分割每行
             const lines = text.split('\n');
-            const cleanedLines = [];
+            const keywordMap = new Map();
             
             for (let line of lines) {
-                // 使用正則表達式移除行尾數字
-                const cleaned = line.replace(/\s+\d+(?:\s+\d+)*$/, '').trim();
-                if (cleaned) {
-                    cleanedLines.push(cleaned);
+                line = line.trim();
+                if (!line) continue;
+                
+                // 使用正則表達式匹配關鍵詞和數字
+                const match = line.match(/^(.*?)\s+(\d+)(?:\s+\d+)*$/);
+                if (match) {
+                    const keyword = match[1].trim();
+                    const frequency = parseInt(match[2], 10);
+                    
+                    if (keyword) {
+                        keywordMap.set(keyword, frequency);
+                    }
+                } else {
+                    // 如果沒有數字，則將整行作為關鍵詞，頻率設為1
+                    keywordMap.set(line, 1);
                 }
             }
             
-            return cleanedLines;
-        }
-        
-        function countFrequency(items) {
-            const frequency = {};
-            for (let item of items) {
-                frequency[item] = (frequency[item] || 0) + 1;
-            }
-            return frequency;
+            return keywordMap;
         }
         
         document.getElementById('compare').addEventListener('click', function() {
@@ -194,46 +213,72 @@
             const part1 = document.getElementById('part1').value;
             const part2 = document.getElementById('part2').value;
             
-            // 處理兩部分資料
-            const list1 = removeTrailingNumbers(part1);
-            const list2 = removeTrailingNumbers(part2);
+            // 處理兩部分資料，提取關鍵詞和頻率
+            const keywordMap1 = extractKeywordsAndFrequencies(part1);
+            const keywordMap2 = extractKeywordsAndFrequencies(part2);
             
-            // 計算頻率
-            const freq1 = countFrequency(list1);
-            const freq2 = countFrequency(list2);
+            // 找出重複關鍵詞
+            const commonKeywords = Array.from(keywordMap1.keys())
+                .filter(keyword => keywordMap2.has(keyword))
+                .sort();
             
-            // 找出重複字詞
-            const uniqueWords1 = new Set(list1);
-            const uniqueWords2 = new Set(list2);
-            const commonWords = Array.from(uniqueWords1).filter(word => uniqueWords2.has(word)).sort();
+            // 更新統計資訊
+            const summaryElement = document.getElementById('summary');
+            const tableSummaryElement = document.getElementById('table-summary');
+            const summaryText = `共找到 ${commonKeywords.length} 組重複的關鍵詞`;
+            summaryElement.textContent = summaryText;
+            tableSummaryElement.textContent = summaryText;
             
             // 更新簡易結果
             const resultArea = document.getElementById('result');
-            if (commonWords.length > 0) {
-                resultArea.textContent = "重複的關鍵詞：\n" + commonWords.join('\n');
+            if (commonKeywords.length > 0) {
+                resultArea.textContent = commonKeywords.join('\n');
             } else {
                 resultArea.textContent = "沒有找到重複的關鍵詞。";
             }
+            
+            // 準備排序的數據
+            const keywordDataArray = [];
+            for (let keyword of commonKeywords) {
+                const freq1 = keywordMap1.get(keyword) || 0;
+                const freq2 = keywordMap2.get(keyword) || 0;
+                const totalFreq = freq1 + freq2;
+                
+                keywordDataArray.push({
+                    keyword: keyword,
+                    freq1: freq1,
+                    freq2: freq2,
+                    total: totalFreq
+                });
+            }
+            
+            // 按照總頻率從高到低排序
+            keywordDataArray.sort((a, b) => b.total - a.total);
             
             // 更新頻率分析表
             const tableBody = document.getElementById('frequency-data');
             tableBody.innerHTML = '';
             
-            if (commonWords.length > 0) {
-                for (let word of commonWords) {
+            if (keywordDataArray.length > 0) {
+                for (let data of keywordDataArray) {
                     const row = document.createElement('tr');
                     
-                    const wordCell = document.createElement('td');
-                    wordCell.textContent = word;
-                    row.appendChild(wordCell);
+                    const keywordCell = document.createElement('td');
+                    keywordCell.textContent = data.keyword;
+                    row.appendChild(keywordCell);
                     
                     const freq1Cell = document.createElement('td');
-                    freq1Cell.textContent = freq1[word] || 0;
+                    freq1Cell.textContent = data.freq1;
                     row.appendChild(freq1Cell);
                     
                     const freq2Cell = document.createElement('td');
-                    freq2Cell.textContent = freq2[word] || 0;
+                    freq2Cell.textContent = data.freq2;
                     row.appendChild(freq2Cell);
+                    
+                    const totalCell = document.createElement('td');
+                    totalCell.textContent = data.total;
+                    totalCell.className = 'total-column';
+                    row.appendChild(totalCell);
                     
                     tableBody.appendChild(row);
                 }
@@ -241,16 +286,49 @@
                 const row = document.createElement('tr');
                 const cell = document.createElement('td');
                 cell.textContent = "沒有找到重複的關鍵詞。";
-                cell.colSpan = 3;
+                cell.colSpan = 4;
                 row.appendChild(cell);
                 tableBody.appendChild(row);
             }
         });
         
-        // 複製簡易結果
+        // 表格排序功能
+        function sortTable(colIndex) {
+            const table = document.getElementById('frequency-table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // 如果表格為空或只有一條「沒有找到」的消息，則不排序
+            if (rows.length <= 1 && rows[0].querySelector('td').colSpan > 1) {
+                return;
+            }
+            
+            // 排序行
+            const sortedRows = rows.sort((a, b) => {
+                const aValue = a.querySelectorAll('td')[colIndex].textContent.trim();
+                const bValue = b.querySelectorAll('td')[colIndex].textContent.trim();
+                
+                if (colIndex === 0) {
+                    // 對關鍵詞進行字母順序排序
+                    return aValue.localeCompare(bValue, 'zh-TW');
+                } else {
+                    // 對數字進行排序
+                    return parseInt(bValue) - parseInt(aValue); // 從高到低排序
+                }
+            });
+            
+            // 清空表格並添加排序後的行
+            tbody.innerHTML = '';
+            sortedRows.forEach(row => tbody.appendChild(row));
+        }
+        
+        // 複製簡易結果（包含統計信息）
         document.getElementById('copy-simple').addEventListener('click', function() {
+            const summaryText = document.getElementById('summary').textContent;
             const resultText = document.getElementById('result').textContent;
-            navigator.clipboard.writeText(resultText).then(function() {
+            const fullText = summaryText + '\n\n' + resultText;
+            
+            navigator.clipboard.writeText(fullText).then(function() {
                 alert('已複製到剪貼簿！');
             }, function() {
                 alert('複製失敗，請手動複製。');
@@ -259,14 +337,16 @@
         
         // 複製詳細結果
         document.getElementById('copy-detailed').addEventListener('click', function() {
+            const summaryText = document.getElementById('table-summary').textContent;
             const table = document.getElementById('frequency-table');
-            const rows = table.querySelectorAll('tr');
-            let text = "關鍵詞\t第一部分出現頻率\t第二部分出現頻率\n";
+            const rows = table.querySelectorAll('tbody tr');
+            let text = summaryText + '\n\n';
+            text += "關鍵詞\t第一部分頻率\t第二部分頻率\t總頻率\n";
             
-            for (let i = 1; i < rows.length; i++) { // 跳過標題行
-                const cells = rows[i].querySelectorAll('td');
-                if (cells.length === 3) {
-                    text += `${cells[0].textContent}\t${cells[1].textContent}\t${cells[2].textContent}\n`;
+            for (let row of rows) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 4) {
+                    text += `${cells[0].textContent}\t${cells[1].textContent}\t${cells[2].textContent}\t${cells[3].textContent}\n`;
                 }
             }
             
